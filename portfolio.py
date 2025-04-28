@@ -1,3 +1,8 @@
+import pandas as pd
+import numpy as np
+import datetime as dt
+
+
 class MappingError(Exception): pass
 
 class Portfolio():
@@ -14,7 +19,7 @@ class Portfolio():
         Capital invested (net) in the portfolio
 
     """
-
+    _TICKER_MAPPER = pd.read_csv('ticker_mapper.csv', index_col=0)['LSEG'].to_dict()
 
     def __init__(self, holdings: pd.DataFrame, cashflows: pd.Series):
         """
@@ -117,18 +122,15 @@ class Portfolio():
 
         series = series.copy()  # Mutability safeguard
 
-        # Import mapping file as a dict (eToro:LSEG)
-        ticker_map = pd.read_csv('LSEG_tickers.csv', index_col=0)['LSEG'].to_dict()
-
         # Extract old tickers
         old_ticks = [value.split('/')[0] for value in series.values]
 
         # Create list of unmapped tickers
-        unmapped = [i for i in old_ticks if i not in ticker_map]
+        unmapped = [i for i in old_ticks if i not in Portfolio._TICKER_MAPPER]
 
         # If no unmapped tickers, return mapped else raise error with unmapped tickers
         if not unmapped:
-            return pd.Series([ticker_map[tick] for tick in old_ticks], index=series.index)
+            return pd.Series([Portfolio._TICKER_MAPPER[tick] for tick in old_ticks], index=series.index)
         else:
             raise MappingError(f'Unmapped tickers: {set(unmapped)}')  # Raise unique mapping errors
         
