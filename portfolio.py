@@ -21,6 +21,8 @@ class Portfolio():
     """
     _TICKER_MAPPER = pd.read_csv('ticker_mapper.csv', index_col=0)['LSEG'].to_dict()
 
+
+
     def __init__(self, holdings: pd.DataFrame, cashflows: pd.Series):
         """
         Initialize a Portfolio instance by loading a historical holdings dataframe.
