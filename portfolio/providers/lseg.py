@@ -1,4 +1,4 @@
-from .base import DataProvider, retry
+from .base import DataProvider, _retry, _treat_historical
 import refinitiv.data as rd
 
 
@@ -8,9 +8,10 @@ class LSEG(DataProvider):
                        tickers: list,
                        sdate: str,
                        edate: str,
-                       adj='unadjusted'):
+                       adj='unadjusted',
+                       freq='D'):
 
-        @retry(n=self.retry_limit, wait=self.wait)  # Add retry logic
+        @_retry(n=self.retry_limit, wait=self.wait)  # Add retry logic
         def attempt():
 
             print('Attempting LSEG retrieval...')  # Give feedback to user
@@ -22,7 +23,7 @@ class LSEG(DataProvider):
                                             'SDate': sdate,
                                             'EDate': edate,
                                             'Curn': 'USD',
-                                            'Frq': 'D',
+                                            'Frq': freq,
                                             },
                                         )
 
@@ -33,7 +34,7 @@ class LSEG(DataProvider):
                                             'SDate': sdate,
                                             'EDate': edate,
                                             'Curn': 'USD',
-                                            'Frq': 'D',
+                                            'Frq': freq,
                                             },
                                         )
 
@@ -45,9 +46,11 @@ class LSEG(DataProvider):
                 raise NotImplementedError(
                     'The adjustment type is not supported by LSEG')
 
+            print('Retrieval successful!')  # Give feedback
+
             # When fetching for one stock, the col name != the ticker
             if len(tickers) == 1:
                 output.columns = tickers  # Fix this to ensure compatibility
 
-            return (output)
+            return (_treat_historical(output, freq=freq))
         return attempt()

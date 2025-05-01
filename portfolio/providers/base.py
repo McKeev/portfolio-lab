@@ -1,9 +1,10 @@
 from functools import wraps
 import time
 from abc import abstractmethod
+import pandas as pd
 
 
-def retry(n, wait):
+def _retry(n: int, wait: int):
     """
     Decorator generator to retry execution up to `n` times.
 
@@ -43,9 +44,47 @@ def retry(n, wait):
     return decorator
 
 
+def _treat_historical(historical: pd.DataFrame, freq: str):
+    """Handle missing data and resampling to match different market timings.
+
+    Resamples to the specified frequency, warns about missing values,
+    and fills in missing data via linear interpolation.
+    """
+    historical = historical.copy()  # Prevent mutability issues
+
+    freq_pd = {
+        'D': 'D',
+        'W': 'W',
+        'M': 'ME',
+        'Y': 'YE',
+    }
+    freq = freq_pd[freq]
+
+    if freq != 'D':
+        historical = historical.resample(freq).last()
+
+    nrows, ncols = historical.shape
+    missing = historical.isna().mean()  # Gives % missing per column
+
+    # Warn user of potentially problematic assets
+    for col, ratio in missing.items():
+        if ratio > DataProvider.THRESHOLD:
+            print(f'Missing {ratio:.2%} of values for {col}')
+
+    # Fill in blanks
+    tot_missing = historical.isna().sum().sum()
+    if tot_missing:
+        print(f'Interpolating {tot_missing:.0f} values '
+              f'({tot_missing / (nrows * ncols):.2%})')
+        historical = historical.interpolate('linear').bfill().ffill()
+
+    return historical
+
+
 class DataProvider():
     """Parent class of data provider sub-classes."""
 
+    THRESHOLD = 0.05
     _ADJ_OPTIONS = ['adjusted', 'unadjusted']
 
     def __init__(self, retry_limit=3, wait=3):
@@ -66,7 +105,8 @@ class DataProvider():
                        tickers: list,
                        sdate: str,
                        edate: str,
-                       adj='unadjusted'):
+                       adj='unadjusted',
+                       freq='D'):
         """Retrieve historical prices from data provider.
 
         Parameters
@@ -79,10 +119,12 @@ class DataProvider():
             End date of fetch (format: 'YYYY-MM-DD').
         adj : {'unadjusted', 'adjusted'}, optional
             Adjustment type for the data (default = 'unadjusted').
-            Options are:
+            Options:
             - 'unadjusted': Returns unadjusted data (default).
             - 'adjusted': Returns adjusted data (e.g., for dividends and
             splits).
+        freq: {'D', 'W', 'M', 'Y'}, optional
+            Frequency interval for fetch.
 
         Returns
         -------
