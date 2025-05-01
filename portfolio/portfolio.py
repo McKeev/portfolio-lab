@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import datetime as dt
+import os
 
 
 class MappingError(Exception): pass
@@ -19,7 +20,10 @@ class Portfolio():
         Capital invested (net) in the portfolio
 
     """
-    _TICKER_MAPPER = pd.read_csv('ticker_mapper.csv', index_col=0)['LSEG'].to_dict()
+    _TICKER_MAPPER = pd.read_csv(
+    os.path.join(os.path.dirname(__file__), 'ticker_mapper.csv'),
+    index_col=0
+    )['LSEG'].to_dict()
 
 
 
