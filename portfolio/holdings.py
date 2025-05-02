@@ -43,6 +43,7 @@ class Holdings():
         self.cashflows = cashflows
         self.invested = float(cashflows.sum())
         self.start, self.end = holdings.index[0], holdings.index[-1]
+        self.tickers = holdings.columns
 
     @classmethod
     def from_etoro(cls, acc_activity: pd.DataFrame):
