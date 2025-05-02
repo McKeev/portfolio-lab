@@ -25,7 +25,10 @@ class Holdings():
         index_col=0
     )['LSEG'].to_dict()
 
-    def __init__(self, holdings: pd.DataFrame, cashflows: pd.Series):
+    def __init__(self,
+                 holdings: pd.DataFrame,
+                 cashflows: pd.Series,
+                 cash_holdings: pd.Series = None):
         """
         Initialize a Holdings instance by loading a historical holdings
         dataframe.
@@ -34,16 +37,19 @@ class Holdings():
         ----------
         holdings : pandas.DataFrame
             A Dataframe containing historical holdings (in units) of the
-            portfolio.
+            traded assets of the portfolio.
         cashflows : pandas.Series
             Cashflows in/out of the portfolio, indexed by date.
+        cash_holdings : pandas.Series, optional
+            Cash holdings of the portfolio, indexed by date.
         """
 
         self.holdings = holdings
         self.cashflows = cashflows
+        self.cash_holdings = cash_holdings
         self.invested = float(cashflows.sum())
-        self.start, self.end = holdings.index[0], holdings.index[-1]
-        self.tickers = holdings.columns
+        self.sdate, self.edate = holdings.index[0], holdings.index[-1]
+        self.tickers = list(holdings.columns)
 
     @classmethod
     def from_etoro(cls, acc_activity: pd.DataFrame):
@@ -115,12 +121,6 @@ class Holdings():
 
         # Build final holdings df
         holdings = trades.cumsum()  # Cumulative sum to get holdings by date
-        holdings = holdings.merge(cash_balance, how='outer',
-                                  left_index=True, right_index=True)\
-            .ffill().fillna(0)  # Add cash balance and frontfill
-
-        # Rename balance col
-        holdings = holdings.rename({'Balance': 'USD'}, axis=1)
         holdings[abs(holdings) < 1e-10] = 0  # Make small numbers 0
 
         # Bring holdings to current day
@@ -128,8 +128,12 @@ class Holdings():
                                    end=(pd.Timestamp.today() - dt.timedelta(1))
                                    .normalize(), freq='D')
         holdings = holdings.reindex(full_range).ffill()
+        cash_balance = cash_balance.reindex(full_range).ffill()
+        cash_balance.name = 'USD'
 
-        return cls(holdings=holdings, cashflows=cashflows)
+        return cls(holdings=holdings,
+                   cashflows=cashflows,
+                   cash_holdings=cash_balance)
 
     @staticmethod
     def _convert_etoro_tickers(series: pd.Series):
