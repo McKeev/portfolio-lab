@@ -1,2 +1,2 @@
 from . import providers
-from .portfolio import Portfolio
+from .holdings import Holdings

@@ -8,20 +8,17 @@ class MappingError(Exception):
     pass
 
 
-class Portfolio():
+class Holdings():
     """
-    A portfolio object containing information about holdings, market value and
-    returns.
+    A Holdings object containing information about holdings and investments of
+    a given portfolio.
 
     Attributes
     ----------
     holdings: pandas.DataFrame
-        A Dataframe containing historical holdings (in units) of the portfolio
+        A Dataframe containing historical holdings (in units) of the portfolio.
     cashflows : pandas.Series
         Cashflows in/out of the portfolio, indexed by date.
-    invested : float
-        Capital invested (net) in the portfolio
-
     """
     _TICKER_MAPPER = pd.read_csv(
         os.path.join(os.path.dirname(__file__), 'ticker_mapper.csv'),
@@ -30,28 +27,22 @@ class Portfolio():
 
     def __init__(self, holdings: pd.DataFrame, cashflows: pd.Series):
         """
-        Initialize a Portfolio instance by loading a historical holdings
+        Initialize a Holdings instance by loading a historical holdings
         dataframe.
 
         Parameters
         ----------
         holdings : pandas.DataFrame
             A Dataframe containing historical holdings (in units) of the
-            portfolio
+            portfolio.
         cashflows : pandas.Series
             Cashflows in/out of the portfolio, indexed by date.
         """
-        # Bring holdings to current day
-        full_range = pd.date_range(start=holdings.index.min(),
-                                   end=(pd.Timestamp.today() - dt.timedelta(1))
-                                   .normalize(), freq='D')
 
-        # Initiate attributes
-        self.holdings = holdings.reindex(full_range).ffill()
-        _holds = self.holdings.iloc[-1]
-        self._holds = _holds[_holds != 0]  # Internal use, non-0 curr holdings
+        self.holdings = holdings
         self.cashflows = cashflows
         self.invested = float(cashflows.sum())
+        self.start, self.end = holdings.index[0], holdings.index[-1]
 
     @classmethod
     def from_etoro(cls, acc_activity: pd.DataFrame):
@@ -62,8 +53,8 @@ class Portfolio():
         Parameters
         ----------
         account_activity : pandas.DataFrame
-            A Dataframe containing historical holdings (in units) of the
-            portfolio.
+            A Dataframe containing the 'Account Activity' sheet from an etoro
+            account statement.
         """
 
         # Convert dates to DateTime
@@ -98,7 +89,7 @@ class Portfolio():
             acc_activity['Type'].isin(transactions)].copy()
 
         # Get correct tickers
-        trades['Asset'] = Portfolio._convert_etoro_tickers(trades['Details'])
+        trades['Asset'] = Holdings._convert_etoro_tickers(trades['Details'])
 
         # Make buys positive and sells negative
         trades['Change'] = np.where(trades['Type'] == 'Open Position',
@@ -118,8 +109,8 @@ class Portfolio():
         trades = trades.resample('D').sum()  # Resample to total EoD changes
 
         # Adjust for stock splits
-        trades = Portfolio._adjust_splits(trades=trades,
-                                          acc_activity=acc_activity)
+        trades = Holdings._adjust_splits(trades=trades,
+                                         acc_activity=acc_activity)
 
         # Build final holdings df
         holdings = trades.cumsum()  # Cumulative sum to get holdings by date
@@ -130,6 +121,12 @@ class Portfolio():
         # Rename balance col
         holdings = holdings.rename({'Balance': 'USD'}, axis=1)
         holdings[abs(holdings) < 1e-10] = 0  # Make small numbers 0
+
+        # Bring holdings to current day
+        full_range = pd.date_range(start=holdings.index.min(),
+                                   end=(pd.Timestamp.today() - dt.timedelta(1))
+                                   .normalize(), freq='D')
+        holdings = holdings.reindex(full_range).ffill()
 
         return cls(holdings=holdings, cashflows=cashflows)
 
@@ -144,12 +141,12 @@ class Portfolio():
         old_ticks = [value.split('/')[0] for value in series.values]
 
         # Create list of unmapped tickers
-        unmapped = [i for i in old_ticks if i not in Portfolio._TICKER_MAPPER]
+        unmapped = [i for i in old_ticks if i not in Holdings._TICKER_MAPPER]
 
         # If no unmapped tickers, return mapped
         # else raise error with unmapped tickers
         if not unmapped:
-            return pd.Series([Portfolio._TICKER_MAPPER[tick]
+            return pd.Series([Holdings._TICKER_MAPPER[tick]
                               for tick in old_ticks], index=series.index)
         else:
             # Raise unique mapping errors
@@ -157,8 +154,7 @@ class Portfolio():
 
     @staticmethod
     def _adjust_splits(trades: pd.DataFrame, acc_activity: pd.DataFrame):
-        """Augments the trades DataFrame for stock splits based on account
-        activity.
+        """Augments the trades DataFrame created from eToro.
 
         Parameters
         ----------
@@ -185,7 +181,7 @@ class Portfolio():
 
         # Determine asset being split (looks like 'NVDA/USD 10:1' in 'Details')
         splits['Asset'] = splits['Details'].apply(lambda x: x.split(' ')[0])
-        splits['Asset'] = Portfolio._convert_etoro_tickers(splits['Asset'])
+        splits['Asset'] = Holdings._convert_etoro_tickers(splits['Asset'])
 
         # Determine multiplier
         splits['Numerator'] = splits['Details'].apply(
