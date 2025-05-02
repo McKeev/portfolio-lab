@@ -4,3 +4,5 @@ __pycache__/
 *.pyd
 *.swp
 *.log
+
+notebook_tests.ipynb
