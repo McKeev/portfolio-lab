@@ -1,4 +1,5 @@
 from functools import wraps
+from ..holdings import Holdings
 import time
 from abc import abstractmethod
 import pandas as pd
@@ -134,3 +135,37 @@ class DataProvider():
         """
         raise NotImplementedError('Historical data retrieval not supported '
                                   'by this provider.')
+
+    def holdings_prices(self,
+                        holdings: Holdings,
+                        adj='unadjusted',
+                        freq='D'):
+        """Get historical prices for a Holdings instance. Wraps get_historical.
+
+        Parameters
+        ----------
+        holdings : Holdings
+            A Holdings instance.
+        adj : {'unadjusted', 'adjusted'}, optional
+            Adjustment type for the data (default = 'unadjusted').
+            Options:
+            - 'unadjusted': Returns unadjusted data (default).
+            - 'adjusted': Returns adjusted data (e.g., for dividends and
+            splits).
+        freq: {'D', 'W', 'M', 'Y'}, optional
+            Frequency interval for fetch.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A dataframe of prices, indexed by dates (rows) and tickers
+            (columns), starting at the earliest and ending at the latest
+            possible dates from the Holdings instance.
+        """
+
+        return self.get_historical(tickers=holdings.tickers,
+                                   sdate=holdings.sdate.strftime('%Y-%m-%d'),
+                                   edate=holdings.edate.strftime('%Y-%m-%d'),
+                                   adj=adj,
+                                   freq=freq,
+                                   )
