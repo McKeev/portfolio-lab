@@ -9,32 +9,37 @@ class Portfolio:
 
     Attributes
     ----------
-    holdings : pd.DataFrame
-        A DataFrame representing the portfolio's holdings over time.
-    prices : pd.DataFrame
-        A DataFrame representing the prices of the assets in the portfolio
-        over time.
-    cashflows : pd.DataFrame
-        A DataFrame containing the cashflows associated with the portfolio.
     cash_holdings : pd.Series
         A Series representing the cash holdings in the portfolio.
+    cashflows : pd.DataFrame
+        A DataFrame containing the cashflows associated with the portfolio.
+    edate : datetime
+        The end date of the portfolio data.
+    freq : {'D', 'W', 'M', 'Y'}
+        The frequency at which the portfolio data is evaluated.
+    holdings : pd.DataFrame
+        A DataFrame representing the portfolio's holdings over time.
+    hpr : pd.Series
+        The returns of the portfolio, adjusted for cashflows.
     invested : float
         The total amount of money invested in the portfolio.
-    tickers : list
-        A list of tickers representing the assets in the portfolio.
-    nav_breakdown : pd.DataFrame
-        A DataFrame representing the portfolio's assets' value over time.
     nav : pd.Series
         A Series representing the total net asset value (NAV) of the portfolio
         over time.
-    sdate : datetime
-        The start date of the portfolio data.
-    edate : datetime
-        The end date of the portfolio data.
+    nav_breakdown : pd.DataFrame
+        A DataFrame representing the portfolio's assets' value over time.
+    prices : pd.DataFrame
+        A DataFrame representing the prices of the assets in the portfolio
+        over time.
+    tickers : list
+        A list of tickers representing the assets in the portfolio.
+    weights : pd.DataFrame
+        The weights in percentage terms of the portfolio's holdings
+        over time.
     value : float
         The final value of the portfolio (NAV at the last date).
-    freq : {'D', 'W', 'M', 'Y'}
-        The frequency at which the portfolio data is evaluated.
+    sdate : datetime
+        The start date of the portfolio data.
     """
 
     def __init__(self, holdings_obj: Holdings,
@@ -70,7 +75,7 @@ class Portfolio:
         self.invested = holdings_obj.invested
         self.tickers = holdings_obj.tickers
 
-        # Calculating NAV
+        # Calculate NAV
         if self.cash_holdings.any():
             temp = self.holdings * self.prices
             self.nav_breakdown = temp.merge(self.cash_holdings, how='inner',
@@ -92,6 +97,9 @@ class Portfolio:
                       f'Detected freq: "{infer_freq}", '
                       f'Used freq: "{freq}".')
         self.freq = freq
+        self.hpr = self._hpr()
+        self.weights = self.nav_breakdown.div(
+            self.nav_breakdown.sum(axis=1), axis=0)
 
     def _freq(self):
         """Returns the numeric frequency."""
@@ -106,3 +114,36 @@ class Portfolio:
             return freq_values.get(self.freq)
         else:
             raise ValueError('INVALID FREQUENCY')
+
+    def _hpr(self):
+        """Calculates the holding period returns of the portfolio."""
+        # Get break dates
+        df = pd.concat([self.nav, self.cashflows], axis=1, join='outer')\
+            .reset_index()  # Merge series and reset index to numerical
+        df.columns = ['date', 'nav', 'cf']  # Rename cols
+        df['adj_cf'] = 0.0  # Create new col with def vals = 0
+
+        # Iterate through indexes and values of valid cashflows
+        # IMPORTANT: df is numerically indexed
+        for i, val in df.loc[df['cf'].notna(), 'cf'].items():
+            j = i - 1  # We look at previous indexes
+            while j >= 0:
+                if not pd.isna(df.at[j, 'nav']):  # Check if valid NAV
+                    df.at[i-1, 'adj_cf'] += val  # If yes, incr adj_cf
+                    break
+                j -= 1  # If invalid, increment counter downwards
+
+        # Drop subset to get back to only valid NAV
+        df.dropna(subset=['nav'], inplace=True)
+
+        # Calculate theta
+        df['theta'] = (df['nav'] + df['adj_cf']) / df['nav']
+
+        # Reverse cumprod of thetas
+        df['adj_factor'] = df['theta'].iloc[::-1].cumprod().iloc[::-1]
+
+        adj_nav = df['nav'] * df['adj_factor']  # NAV reinvestments-adj
+        hpr = adj_nav.pct_change()  # Get returns
+        hpr.name = 'HPR'  # Name series for clarity
+
+        return hpr
