@@ -8,7 +8,7 @@ class MappingError(Exception):
     pass
 
 
-class Holdings():
+class Holdings:
     """
     A Holdings object containing information about holdings and investments of
     a given portfolio.
@@ -19,6 +19,16 @@ class Holdings():
         A Dataframe containing historical holdings (in units) of the portfolio.
     cashflows : pandas.Series
         Cashflows in/out of the portfolio, indexed by date.
+    cash_holdings : pd.Series
+        A Series representing the cash holdings in the portfolio.
+    invested : float
+        The total amount of money invested in the portfolio.
+    tickers : list
+        A list of tickers representing the assets in the portfolio.
+    sdate : datetime
+        The start date of the portfolio data.
+    edate : datetime
+        The end date of the portfolio data.
     """
     _TICKER_MAPPER = pd.read_csv(
         os.path.join(os.path.dirname(__file__), 'ticker_mapper.csv'),
