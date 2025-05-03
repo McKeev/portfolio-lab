@@ -8,7 +8,7 @@ class LSEG(DataProvider):
                        tickers: list,
                        sdate: str,
                        edate: str,
-                       adj='unadjusted',
+                       adj='adjusted',
                        freq='D'):
 
         @_retry(n=self.retry_limit, wait=self.wait)  # Add retry logic
@@ -16,9 +16,9 @@ class LSEG(DataProvider):
 
             print('Attempting LSEG retrieval...')  # Give feedback to user
 
-            if adj == 'unadjusted':
+            if adj == 'adjusted':
                 output = rd.get_history(universe=tickers,
-                                        fields=['TR.CLOSEPRICE(Adjusted=0)'],
+                                        fields=['TR.CLOSEPRICE'],
                                         parameters={
                                             'SDate': sdate,
                                             'EDate': edate,
@@ -27,9 +27,9 @@ class LSEG(DataProvider):
                                             },
                                         )
 
-            elif adj == 'adjusted':
+            elif adj == 'unadjusted':
                 output = rd.get_history(universe=tickers,
-                                        fields=['TR.CLOSEPRICE'],
+                                        fields=['TR.CLOSEPRICE(Adjusted=0)'],
                                         parameters={
                                             'SDate': sdate,
                                             'EDate': edate,
@@ -52,5 +52,6 @@ class LSEG(DataProvider):
             if len(tickers) == 1:
                 output.columns = tickers  # Fix this to ensure compatibility
 
+            # Treat NaN values
             return (_treat_historical(output, freq=freq))
         return attempt()

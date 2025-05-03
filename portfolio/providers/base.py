@@ -38,7 +38,7 @@ def _retry(n: int, wait: int):
                         )
                         time.sleep(wait)  # Wait before starting next attempt
                     else:
-                        print(f'Attempt {attempt}/{n} failed.'
+                        print(f'Attempt {attempt}/{n} failed. '
                               f'Max attempts reached.')
                         raise
         return wrapper
@@ -106,7 +106,7 @@ class DataProvider():
                        tickers: list,
                        sdate: str,
                        edate: str,
-                       adj='unadjusted',
+                       adj='adjusted',
                        freq='D'):
         """Retrieve historical prices from data provider.
 
@@ -118,12 +118,12 @@ class DataProvider():
             Start date of fetch (format: 'YYYY-MM-DD').
         edate : str
             End date of fetch (format: 'YYYY-MM-DD').
-        adj : {'unadjusted', 'adjusted'}, optional
-            Adjustment type for the data (default = 'unadjusted').
+        adj : {'adjusted', 'unadjusted'}, optional
+            Adjustment type for the data (default = 'adjusted').
             Options:
-            - 'unadjusted': Returns unadjusted data (default).
             - 'adjusted': Returns adjusted data (e.g., for dividends and
             splits).
+            - 'unadjusted': Returns unadjusted data.
         freq: {'D', 'W', 'M', 'Y'}, optional
             Frequency interval for fetch.
 
@@ -138,7 +138,7 @@ class DataProvider():
 
     def holdings_prices(self,
                         holdings: Holdings,
-                        adj='unadjusted',
+                        adj='adjusted',
                         freq='D'):
         """Get historical prices for a Holdings instance. Wraps get_historical.
 
@@ -146,12 +146,12 @@ class DataProvider():
         ----------
         holdings : Holdings
             A Holdings instance.
-        adj : {'unadjusted', 'adjusted'}, optional
-            Adjustment type for the data (default = 'unadjusted').
+        adj : {'adjusted', 'unadjusted'}, optional
+            Adjustment type for the data (default = 'adjusted').
             Options:
-            - 'unadjusted': Returns unadjusted data (default).
             - 'adjusted': Returns adjusted data (e.g., for dividends and
             splits).
+            - 'unadjusted': Returns unadjusted data.
         freq: {'D', 'W', 'M', 'Y'}, optional
             Frequency interval for fetch.
 
