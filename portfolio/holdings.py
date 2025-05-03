@@ -96,6 +96,7 @@ class Holdings:
         ].copy()
         cashflows.name = 'Cashflows'
         cashflows.index = cashflows.index.normalize()
+        cashflows = cashflows.groupby(level=0).sum()
 
         # Make a cash balance series (will be appended back to holdings later)
         cash_balance = acc_activity['Balance'].resample('D').last().ffill()
