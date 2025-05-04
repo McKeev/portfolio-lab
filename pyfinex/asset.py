@@ -36,11 +36,16 @@ class Asset:
         name : str, optional
             The asset's name (Default = 'Asset').
         """
-        self.hpr = hpr
-        self.hpr.name = name
+        self._hpr = hpr
+        self._hpr.name = name
         self.freq = utils.Frequency(freq)
         self.name = name
-        self.sdate, self.edate = self.hpr.index[0], self.hpr.index[1]
+        self.sdate, self.edate = self.hpr.index[0], self.hpr.index[-1]
+
+    @property
+    def hpr(self):
+        """User-facing property."""
+        return self._hpr.copy()
 
     def apy(self, sdate: dt.date = None, edate: dt.date = None):
         """Returns the annualised return of the Asset."""
@@ -74,8 +79,8 @@ class Asset:
     def ytd(self):
         """Returns the Year-To-Date returns"""
         year = dt.date.today().year  # Get current year
-        mask = self.hpr.index.year == year  # Create mask of current year
-        first_date = self.hpr[mask].index.min()
+        mask = self._hpr.index.year == year  # Create mask of current year
+        first_date = self._hpr[mask].index.min()
 
         return self.tr(first_date, self.edate)
 
@@ -86,11 +91,11 @@ class Asset:
 
     def _hpr_range(self, sdate: dt.date = None, edate: dt.date = None):
         """Returns the Holding Period Returns in the specified interval."""
-        if not (sdate and edate):
-            return self.hpr
+        if not (sdate or edate):
+            return self._hpr
         elif sdate and edate:
-            return self.hpr.loc[sdate:edate]
+            return self._hpr.loc[sdate:edate]
         elif sdate and (not edate):
-            return self.hpr.loc[sdate:self.edate]
+            return self._hpr.loc[sdate:self.edate]
         elif (not sdate) and edate:
-            return self.hpr.loc[self.sdate:edate]
+            return self._hpr.loc[self.sdate:edate]

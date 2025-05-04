@@ -97,8 +97,8 @@ class Portfolio(Asset):
 
         # Asset (parent class) attributes
         self.freq = utils.Frequency(freq)
-        self.hpr = self._hpr()
-        self.hpr.name = name
+        self._hpr = self._calc_hpr()
+        self._hpr.name = name
         self.sdate, self.edate = self.hpr.index[0], self.hpr.index[-1]
         self.name = name
 
@@ -106,7 +106,7 @@ class Portfolio(Asset):
         self.weights = self.nav_breakdown.div(
             self.nav_breakdown.sum(axis=1), axis=0)
 
-    def _hpr(self):
+    def _calc_hpr(self):
         """Calculates the holding period returns of the portfolio."""
         # Get break dates
         df = pd.concat([self.nav, self.cashflows], axis=1, join='outer')\
