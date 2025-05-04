@@ -1,5 +1,5 @@
 from functools import wraps
-from ..holdings import Holdings
+from pyfinex.holdings import Holdings
 import time
 from abc import abstractmethod
 import pandas as pd

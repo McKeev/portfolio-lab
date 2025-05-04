@@ -1,5 +1,5 @@
 import pandas as pd
-from .holdings import Holdings
+from pyfinex.holdings import Holdings
 
 
 class Portfolio:

@@ -1,5 +1,6 @@
-from .base import DataProvider
-from .lseg import LSEG
+from pyfinex.providers.base import DataProvider
+from pyfinex.providers.lseg import LSEG
+
 
 def _copy_docstrings(parent_class):
     """
@@ -17,6 +18,7 @@ def _copy_docstrings(parent_class):
                 child_method = getattr(child_class, attr_name)
                 if callable(child_method) and not child_method.__doc__:
                     child_method.__doc__ = attr_value.__doc__
+
 
 # Automatically apply it when providers are loaded
 _copy_docstrings(DataProvider)

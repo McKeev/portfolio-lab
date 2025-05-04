@@ -1,3 +1,3 @@
-from . import providers
-from .holdings import Holdings
-from .portfolio import Portfolio
+from pyfinex import providers
+from pyfinex.holdings import Holdings
+from pyfinex.portfolio import Portfolio

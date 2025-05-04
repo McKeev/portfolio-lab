@@ -1,4 +1,4 @@
-from .base import DataProvider, _retry, _treat_historical
+from pyfinex.providers.base import DataProvider, _retry, _treat_historical
 import refinitiv.data as rd
 
 
