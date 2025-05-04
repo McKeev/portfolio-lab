@@ -14,7 +14,7 @@ class Portfolio:
     cashflows : pd.DataFrame
         A DataFrame containing the cashflows associated with the portfolio.
     edate : datetime
-        The end date of the portfolio data.
+        The end date of the portfolio's return data.
     freq : {'D', 'W', 'M', 'Y'}
         The frequency at which the portfolio data is evaluated.
     holdings : pd.DataFrame
@@ -39,7 +39,7 @@ class Portfolio:
     value : float
         The final value of the portfolio (NAV at the last date).
     sdate : datetime
-        The start date of the portfolio data.
+        The start date of the portfolio's return data.
     """
 
     def __init__(self, holdings_obj: Holdings,
@@ -85,8 +85,7 @@ class Portfolio:
 
         self.nav = self.nav_breakdown.sum(axis=1)
 
-        # Attributes from NAV
-        self.sdate, self.edate = self.nav.index[0], self.nav.index[1]
+        # Add a value attr for quick check
         self.value = self.nav.iloc[-1]
 
         # Attempt frequency check
@@ -96,8 +95,13 @@ class Portfolio:
                 print('WARNING! Check frequency. '
                       f'Detected freq: "{infer_freq}", '
                       f'Used freq: "{freq}".')
+
+        # Asset (parent class) attributes
         self.freq = freq
         self.hpr = self._hpr()
+        self.sdate, self.edate = self.hpr.index[0], self.hpr.index[1]
+
+        # Add a weights attribute
         self.weights = self.nav_breakdown.div(
             self.nav_breakdown.sum(axis=1), axis=0)
 
@@ -133,8 +137,9 @@ class Portfolio:
                     break
                 j -= 1  # If invalid, increment counter downwards
 
-        # Drop subset to get back to only valid NAV
+        # Drop subset to get back to only valid NAV and set index
         df.dropna(subset=['nav'], inplace=True)
+        df.set_index('date', drop=True, inplace=True)
 
         # Calculate theta
         df['theta'] = (df['nav'] + df['adj_cf']) / df['nav']
@@ -146,4 +151,4 @@ class Portfolio:
         hpr = adj_nav.pct_change()  # Get returns
         hpr.name = 'HPR'  # Name series for clarity
 
-        return hpr
+        return hpr.iloc[1:]
