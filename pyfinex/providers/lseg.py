@@ -1,5 +1,6 @@
 from pyfinex.providers.base import DataProvider, _retry, _treat_historical
 import refinitiv.data as rd
+import pyfinex.utils as utils
 
 
 class LSEG(DataProvider):
@@ -10,6 +11,8 @@ class LSEG(DataProvider):
                        edate: str,
                        adj='adjusted',
                        freq='D'):
+
+        freq = utils.Frequency(freq)  # Convert to freq object
 
         @_retry(n=self.retry_limit, wait=self.wait)  # Add retry logic
         def attempt():
@@ -23,7 +26,7 @@ class LSEG(DataProvider):
                                             'SDate': sdate,
                                             'EDate': edate,
                                             'Curn': 'USD',
-                                            'Frq': freq,
+                                            'Frq': freq.f_lseg(),
                                             },
                                         )
 
@@ -34,7 +37,7 @@ class LSEG(DataProvider):
                                             'SDate': sdate,
                                             'EDate': edate,
                                             'Curn': 'USD',
-                                            'Frq': freq,
+                                            'Frq': freq.f_lseg(),
                                             },
                                         )
 

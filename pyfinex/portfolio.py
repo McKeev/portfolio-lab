@@ -1,5 +1,6 @@
 import pandas as pd
 from pyfinex.holdings import Holdings
+import pyfinex.utils as utils
 
 
 class Portfolio:
@@ -15,7 +16,7 @@ class Portfolio:
         A DataFrame containing the cashflows associated with the portfolio.
     edate : datetime
         The end date of the portfolio's return data.
-    freq : {'D', 'W', 'M', 'Y'}
+    freq : utils.Frequency
         The frequency at which the portfolio data is evaluated.
     holdings : pd.DataFrame
         A DataFrame representing the portfolio's holdings over time.
@@ -58,7 +59,7 @@ class Portfolio:
             A DataFrame containing the historical prices for the assets in the
             portfolio.
         freq : {'D', 'W', 'M', 'Y'}
-            The frequency at which the portfolio data is recorded
+            The frequency at which the portfolio price data is recorded.
         """
         # Value checks
         assert all(holdings_obj.holdings.columns == prices.columns)
@@ -97,27 +98,13 @@ class Portfolio:
                       f'Used freq: "{freq}".')
 
         # Asset (parent class) attributes
-        self.freq = freq
+        self.freq = utils.Frequency(freq)
         self.hpr = self._hpr()
         self.sdate, self.edate = self.hpr.index[0], self.hpr.index[1]
 
         # Add a weights attribute
         self.weights = self.nav_breakdown.div(
             self.nav_breakdown.sum(axis=1), axis=0)
-
-    def _freq(self):
-        """Returns the numeric frequency."""
-        freq_values = {
-            'D': int(252),
-            'W': int(52),
-            'M': int(12),
-            'Y': int(1),
-        }
-
-        if freq_values.get(self.freq):
-            return freq_values.get(self.freq)
-        else:
-            raise ValueError('INVALID FREQUENCY')
 
     def _hpr(self):
         """Calculates the holding period returns of the portfolio."""
