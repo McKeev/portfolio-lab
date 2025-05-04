@@ -101,6 +101,7 @@ class Portfolio(Asset):
         self._hpr.name = name
         self.sdate, self.edate = self.hpr.index[0], self.hpr.index[-1]
         self.name = name
+        self._index_set = set(self._hpr.index)
 
         # Add a weights attribute
         self.weights = self.nav_breakdown.div(

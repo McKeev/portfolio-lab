@@ -1,4 +1,6 @@
 from enum import Enum
+import pandas as pd
+import numpy as np
 
 
 class Frequency(Enum):
@@ -52,3 +54,12 @@ class Frequency(Enum):
             "Y": "Y",
         }
         return mapping[self.value]
+
+
+def closest_date(index: pd.DatetimeIndex, target):
+    """Vectorized operation to find closest index."""
+    target = pd.Timestamp(target)
+    closest_id = np.abs(index - target).argmin()
+    closest_dt = index[closest_id]
+
+    return closest_dt
