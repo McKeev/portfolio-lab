@@ -1,7 +1,7 @@
 from functools import wraps
 from pyfinex.holdings import Holdings
 import time
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 import pandas as pd
 import pyfinex.utils as utils
 
@@ -75,8 +75,8 @@ def _treat_historical(historical: pd.DataFrame, freq: utils.Frequency):
     return historical
 
 
-class DataProvider():
-    """Parent class of data provider sub-classes."""
+class DataProvider(ABC):
+    """Abstract base class for data provider sub-classes."""
 
     THRESHOLD = 0.05
     _ADJ_OPTIONS = ['adjusted', 'unadjusted']
