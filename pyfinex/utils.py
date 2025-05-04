@@ -26,6 +26,15 @@ class Frequency(Enum):
         }
         return mapping[self.value]
 
+    def days(self):
+        mapping = {
+            'D': 1.0,
+            'W': 7.0,
+            'M': 30.0,
+            'Y': 360.0,
+        }
+        return mapping[self.value]
+
     def f_pandas(self):
         mapping = {
             'D': 'D',

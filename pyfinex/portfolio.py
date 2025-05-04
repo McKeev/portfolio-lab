@@ -1,9 +1,10 @@
 import pandas as pd
 from pyfinex.holdings import Holdings
 import pyfinex.utils as utils
+from pyfinex.asset import Asset
 
 
-class Portfolio:
+class Portfolio(Asset):
     """
     A class to represent a portfolio consisting of holdings and their
     corresponding prices.
@@ -24,6 +25,8 @@ class Portfolio:
         The returns of the portfolio, adjusted for cashflows.
     invested : float
         The total amount of money invested in the portfolio.
+    name : str
+        The portfolio's name.
     nav : pd.Series
         A Series representing the total net asset value (NAV) of the portfolio
         over time.
@@ -45,7 +48,8 @@ class Portfolio:
 
     def __init__(self, holdings_obj: Holdings,
                  prices: pd.DataFrame,
-                 freq: str):
+                 freq: str,
+                 name: str = 'Porfolio'):
         """
         Initializes the Portfolio class with holdings data, prices, and
         frequency.
@@ -60,6 +64,8 @@ class Portfolio:
             portfolio.
         freq : {'D', 'W', 'M', 'Y'}
             The frequency at which the portfolio price data is recorded.
+        name : str, optional
+            The portfolio's name (Default = 'Portfolio').
         """
         # Value checks
         assert all(holdings_obj.holdings.columns == prices.columns)
@@ -89,18 +95,12 @@ class Portfolio:
         # Add a value attr for quick check
         self.value = self.nav.iloc[-1]
 
-        # Attempt frequency check
-        infer_freq = pd.infer_freq(self.nav.index)
-        if infer_freq:
-            if infer_freq.split('-')[0] != freq:
-                print('WARNING! Check frequency. '
-                      f'Detected freq: "{infer_freq}", '
-                      f'Used freq: "{freq}".')
-
         # Asset (parent class) attributes
         self.freq = utils.Frequency(freq)
         self.hpr = self._hpr()
-        self.sdate, self.edate = self.hpr.index[0], self.hpr.index[1]
+        self.hpr.name = name
+        self.sdate, self.edate = self.hpr.index[0], self.hpr.index[-1]
+        self.name = name
 
         # Add a weights attribute
         self.weights = self.nav_breakdown.div(
@@ -136,6 +136,5 @@ class Portfolio:
 
         adj_nav = df['nav'] * df['adj_factor']  # NAV reinvestments-adj
         hpr = adj_nav.pct_change()  # Get returns
-        hpr.name = 'HPR'  # Name series for clarity
 
         return hpr.iloc[1:]
