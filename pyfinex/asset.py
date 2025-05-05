@@ -115,7 +115,10 @@ class Asset:
             return self._adv_hpr_range(date_range[0], date_range[1])
 
     def _adv_hpr_range(self, sdate, edate):
-
+        """
+        Returns the Holding Period Returns in the specified interval.
+        Used when dates are no in index
+        """
         if sdate not in self._index_set:
             sdate = utils.closest_date(self._hpr.index, sdate)
         elif edate not in self._index_set:
