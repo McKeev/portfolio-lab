@@ -1,8 +1,9 @@
 from functools import wraps
-from ..holdings import Holdings
+from pyfinex.holdings import Holdings
 import time
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 import pandas as pd
+import pyfinex.utils as utils
 
 
 def _retry(n: int, wait: int):
@@ -45,7 +46,7 @@ def _retry(n: int, wait: int):
     return decorator
 
 
-def _treat_historical(historical: pd.DataFrame, freq: str):
+def _treat_historical(historical: pd.DataFrame, freq: utils.Frequency):
     """Handle missing data and resampling to match different market timings.
 
     Resamples to the specified frequency, warns about missing values,
@@ -53,16 +54,8 @@ def _treat_historical(historical: pd.DataFrame, freq: str):
     """
     historical = historical.copy()  # Prevent mutability issues
 
-    freq_pd = {
-        'D': 'D',
-        'W': 'W',
-        'M': 'ME',
-        'Y': 'YE',
-    }
-    freq = freq_pd[freq]
-
-    if freq != 'D':
-        historical = historical.resample(freq).last()
+    if freq.f_lseg() != 'D':
+        historical = historical.resample(freq.f_lseg()).last()
 
     nrows, ncols = historical.shape
     missing = historical.isna().mean()  # Gives % missing per column
@@ -82,8 +75,8 @@ def _treat_historical(historical: pd.DataFrame, freq: str):
     return historical
 
 
-class DataProvider():
-    """Parent class of data provider sub-classes."""
+class DataProvider(ABC):
+    """Abstract base class for data provider sub-classes."""
 
     THRESHOLD = 0.05
     _ADJ_OPTIONS = ['adjusted', 'unadjusted']
